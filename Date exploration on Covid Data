@@ -1,0 +1,100 @@
+-- Total Global Death
+
+SELECT
+  SUM(new_cases) as total_cases, 
+  SUM(cast(new_deaths as int)) as total_deaths, 
+  SUM(cast(new_deaths as int))/SUM(New_Cases)*100 as DeathPercentage
+FROM
+  Covid.covid_death 
+WHERE
+  continent is not null 
+ORder by
+  1,2
+
+-- Highest Death Cases by Countries
+
+SELECT
+  SUM(new_cases) as total_cases, 
+  SUM(cast(new_deaths as int)) as total_deaths, 
+  SUM(cast(new_deaths as int))/SUM(New_Cases)*100 as DeathPercentage
+FROM
+  Covid.covid_death 
+WHERE
+  continent is not null 
+ORDER BY
+  1,2
+  
+-- Total Death by Continent
+
+SELECT 
+  location,
+  SUM(new_deaths) AS total_death
+FROM 
+  Covid.covid_death
+WHERE 
+  continent is NULL 
+  AND location NOT IN ('World', 'European Union', 'International')
+GROUP BY
+  location
+ORDER BY 
+  2 DESC
+  
+-- Highest Infection Rate
+
+SELECT 
+  location, 
+  population, 
+  MAX(total_cases) AS total_case,
+  MAX(total_cases/population)*100 AS infection_rate,
+FROM 
+  Covid.covid_death
+GROUP BY 
+  location, 
+  population
+ORDER BY 
+  infection_rate DESC
+  
+-- Infection Rate By Date
+
+SELECT 
+  location, 
+  population,date, 
+  MAX(total_cases) AS total_case,
+  MAX(total_cases/population)*100 AS infection_rate,
+FROM 
+  Covid.covid_death
+GROUP BY 
+  location, 
+  population,date
+ORDER BY 
+  infection_rate DESC
+  
+-- The percentage of vaccinated population
+
+WITH dea_vac AS 
+(
+SELECT 
+  dea.continent,
+  dea.location,
+  dea.date,
+  dea.population,
+  vac.new_vaccinations,
+  SUM(vac.new_vaccinations) over (partition by dea.location ORDER BY dea.date) AS commulative_total_vaccincated,
+FROM 
+  Covid.covid_death dea
+JOIN 
+  Covid.covid_vaccination vac
+ON 
+  vac.location = dea.location
+AND 
+  vac.date = dea.date 
+WHERE 
+  dea.continent IS NOT NULL
+ORDER BY 2,3
+)
+SELECT 
+  *,
+  commulative_total_vaccincated/population*100 AS percent_total_vaccinated
+FROM
+  dea_vac
+
